@@ -1,0 +1,50 @@
+Step 1 Create a pod with inter-pod anti-affinity.
+[root@k8smaster1 scheduler]# cat > pod-affinity-pod3.yaml <<EOF
+kind: Pod
+apiVersion: v1
+metadata:
+ name: pod-affinity-pod3
+spec:
+ containers:
+ - name: pod-affinity-pod3
+ image: nginx
+ affinity:
+ podAntiAffinity:
+ preferredDuringSchedulingIgnoredDuringExecution:
+ - weight: 100
+ podAffinityTerm:
+ labelSelector:
+ matchExpressions:
+ - key: foo
+ operator: In
+ values:
+ - bar
+ topologyKey: zone
+EOF
+[root@k8smaster1 scheduler]# kubectl apply -f pod-affinity-pod3.yaml
+
+
+
+Step 2 Check the scheduling result.
+pod1 with the foo:bar label exists in zoneA. Therefore, pod3 is preferentially scheduled
+to the node in zoneB.
+kubectl get pods -o wide
+
+
+
+
+
+
+Step 3 Delete the test pods.
+[root@k8smaster1 scheduler]# kubectl delete pods pod-affinity-pod1
+[root@k8smaster1 scheduler]# kubectl delete pods pod-affinity-pod2
+[root@k8smaster1 scheduler]# kubectl delete pods pod-affinity-pod3
+
+
+
+
+
+
+
+
+
