@@ -1,0 +1,40 @@
+Step 1 Set the master node to MasterOnly.
+[root@k8smaster1 scheduler]# kubectl taint node k8smaster3 noderole.kubernetes.io/master="":NoSchedule
+
+
+kubectl describe nodes k8smaster3
+
+
+Step 2 Create a test pod.
+Create a node label to ensure that the pod is scheduled to the specified node.
+[root@k8smaster1 scheduler]# kubectl label nodes k8smaster3 class=b
+Create a pod.
+[root@k8smaster1 scheduler]# cat > master-pod.yaml <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+ name: master-pod
+spec:
+ containers:
+ - name: master-pod
+ image: nginx
+ imagePullPolicy: IfNotPresent
+ nodeSelector:
+ class: b
+EOF
+[root@k8smaster1 scheduler]# kubectl apply -f master-pod.yaml
+Check the node scheduling status. Only k8smaster3 has the class:b label and has been
+marked as MasterOnly. In this case, the pod can only be pending.
+kubectl get pods -o wide
+
+
+Step 3 Mark the master node as schedulable.
+[root@k8smaster1 scheduler]# kubectl taint node k8smaster3 node-role.kubernetes.io/masterVerify that the pod has been scheduled to k8smaster3 and is running properly.
+
+kubectl get pods -o wide
+
+
+Step 4 Delete the test pod.
+[root@k8smaster1 scheduler]# kubectl delete pods master-pod
+
+
