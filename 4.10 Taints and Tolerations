@@ -1,0 +1,112 @@
+Step 1 Create a taint for a node.
+[root@k8smaster1 scheduler]# kubectl taint nodes k8snode1 key1=value1:NoSchedule
+View the node taint.
+[root@k8smaster1 scheduler]# kubectl get nodes k8snode1 -o go-template={{.spec.taints}}
+
+
+
+Alternatively, run the kubectl describe nodes k8snode1 command to view the taint.
+
+
+
+Add a label to k8snode1.
+[root@k8smaster1 scheduler]# kubectl label nodes k8snode1 class=a
+
+
+
+
+Step 2 Deploy test pods.
+[root@k8smaster1 scheduler]# cat > tolerations-pod1.yaml <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+ name: tolerations-pod1
+spec:
+ containers:
+ - name: tolerations-pod1
+ image: nginx
+ imagePullPolicy: IfNotPresent
+ nodeSelector:
+ class: a
+EOF
+cat > tolerations-pod2.yaml <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+ name: tolerations-pod2
+spec:
+ containers:
+ - name: tolerations-pod2
+ image: nginx
+ imagePullPolicy: IfNotPresent
+nodeSelector:
+ class: a
+EOF
+[root@k8smaster1 scheduler]# kubectl apply -f tolerations-pod1.yaml
+[root@k8smaster1 scheduler]# kubectl apply -f tolerations-pod2.yaml
+
+
+
+Verify that the pods are in the Pending state.
+
+
+kubectl get pods -o wide
+
+kubectl describe pods tolerations-pod1
+
+
+
+Step 3 Add tolerations to pods.
+Delete the test pods, add tolerations to the YAML files, and re-deploy the pods.
+[root@k8smaster1 scheduler]# kubectl delete -f tolerations-pod1.yaml
+[root@k8smaster1 scheduler]# kubectl delete -f tolerations-pod2.yaml
+[root@k8smaster1 scheduler]# cat > tolerations-pod1.yaml <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+ name: tolerations-pod1
+spec:
+ containers:
+ - name: tolerations-pod1
+ image: nginx
+ imagePullPolicy: IfNotPresent
+ nodeSelector:
+ class: a
+tolerations:
+ - key: "key1"
+operator: "Exists"
+ effect: "NoSchedule"
+EOF
+cat > tolerations-pod2.yaml <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+ name: tolerations-pod2
+spec:
+ containers:
+ - name: tolerations-pod2
+ image: nginx
+ imagePullPolicy: IfNotPresent
+ nodeSelector:
+ class: a
+ tolerations:
+ - key: "key1"
+ operator: "Equal"
+ value: "value1"
+ effect: "NoSchedule"
+EOF
+[root@k8smaster1 scheduler]# kubectl apply -f tolerations-pod1.yaml
+[root@k8smaster1 scheduler]# kubectl apply -f tolerations-pod2.yaml
+
+
+
+Step 4 Check the scheduling result.
+[root@k8smaster1 scheduler]# kubectl get pods -o wide
+The tolerations of the two pods match the taint. Therefore, the pod can be scheduled to
+k8snode1.
+kubectl get pods -o wide
+
+
+Step 5 Delete the node taint.
+[root@k8smaster1 scheduler]# kubectl taint nodes k8snode1 key1=value1:NoSchedule
+
