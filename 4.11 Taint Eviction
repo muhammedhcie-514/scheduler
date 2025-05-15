@@ -1,0 +1,54 @@
+Step 1 Create a taint with eviction.
+[root@k8smaster1 scheduler]# kubectl taint nodes k8snode1 key1=value1:NoExecute
+pod1 and pod2 are evicted because they do not match the taint. They are not printed in
+the kubectl get pods command output.
+kubectl get pods -o wide
+
+
+Step 2 Create pods with tolerations.
+[root@k8smaster1 scheduler]# cat > tolerations-pod3.yaml <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+ name: tolerations-pod3
+spec:
+ containers:
+ - name: tolerations-pod3
+ image: nginx
+ imagePullPolicy: IfNotPresent
+ tolerations:
+ - key: "key1"
+ operator: "Equal"
+ value: "value1"
+ effect: "NoExecute"
+EOF
+cat > tolerations-pod4.yaml <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+ name: tolerations-pod4
+spec:
+ containers:
+ - name: tolerations-pod4
+ image: nginx
+ imagePullPolicy: IfNotPresent
+ tolerations:
+ - key: "key1"
+ operator: "Equal"
+ value: "value1"
+ effect: "NoExecute"
+ tolerationSeconds: 30
+EOF
+[root@k8smaster1 scheduler]# kubectl apply -f tolerations-pod3.yaml
+[root@k8smaster1 scheduler]# kubectl apply -f tolerations-pod4.yaml
+
+
+
+Step 3 Check the scheduling result.
+After 30 seconds, check the scheduling result. Only pod3 exists and pod4 is evicted after
+timeout.
+
+
+
+
+
