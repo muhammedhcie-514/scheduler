@@ -1,0 +1,51 @@
+Step 1 Add topology spread constraints.
+Add node name constraints to the YAML files of topo-pod1 to topo-pod4. The following
+is an example of topo-pod1.yaml:
+[root@k8smaster1 scheduler]# cat > topo-pod1.yaml <<EOF
+kind: Pod
+apiVersion: v1
+metadata:
+ name: topo-pod1
+ labels:
+ foo: bar
+spec:
+ containers:
+ - name: topo-pod
+ image: nginx
+ topologySpreadConstraints:
+ - maxSkew: 1
+ topologyKey: zone
+ whenUnsatisfiable: DoNotSchedule
+ labelSelector:
+ matchLabels:
+ foo: bar
+ - maxSkew: 1
+ topologyKey: kubernetes.io/hostname
+ whenUnsatisfiable: DoNotSchedule
+ labelSelector:
+ matchLabels:
+ foo: bar
+EOF
+
+
+
+Step 2 Deploy topo-pod1 to topo-pod3.
+[root@k8smaster1 scheduler]# kubectl apply -f topo-pod1.yaml
+[root@k8smaster1 scheduler]# kubectl apply -f topo-pod2.yaml
+[root@k8smaster1 scheduler]# kubectl apply -f topo-pod3.yaml
+Check the deployment status. The three pods are deployed in zoneA and zoneB
+respectively, and the two in the same zone belong to different nodes.
+
+Step 3 Deploy topo-pod4.
+[root@k8smaster1 scheduler]# kubectl apply -f topo-pod4.yaml
+Step 4 Check the scheduling of topo-pod4.
+topo-pod4 is scheduled to the zone with fewer pods and to another node.
+
+
+Step 5 Delete the test pods.
+[root@k8smaster1 scheduler]# kubectl delete pods -l foo
+
+
+
+
+
