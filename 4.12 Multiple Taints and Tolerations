@@ -1,0 +1,42 @@
+Step 1 Create multiple taints.
+[root@k8smaster1 scheduler]# kubectl taint nodes k8snode1 key1=value1:NoSchedule
+[root@k8smaster1 scheduler]# kubectl taint nodes k8snode1 key2=value2:NoSchedule
+
+
+Step 2 Create a pod with multiple tolerations.
+[root@k8smaster1 scheduler]# cat > tolerations-pod5.yaml <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+ name: tolerations-pod5
+spec:
+ containers:
+ - name: tolerations-pod5
+ image: nginx
+ imagePullPolicy: IfNotPresent
+ tolerations:
+ - key: "key1"
+ operator: "Equal"
+ value: "value1"
+ effect: "NoExecute"
+ - key: "key1"
+ operator: "Equal"
+ value: "value1"
+ effect: "NoSchedule"
+EOF
+[root@k8smaster1 scheduler]# kubectl apply -f tolerations-pod5.yaml
+
+
+Step 3 Check the scheduling result.
+pod5 cannot match all taints of k8snode1 and is scheduled to another node.
+
+
+Step 4 Clear taints.
+Clear taints. Otherwise, other pods cannot be scheduled to the node.
+[root@k8smaster1 scheduler]# kubectl taint nodes k8snode1 key1=value1:NoExecute-
+[root@k8smaster1 scheduler]# kubectl taint nodes k8snode1 key1=value1:NoSchedule-
+[root@k8smaster1 scheduler]# kubectl taint nodes k8snode1 key2=value2:NoScheduleStep 5 Delete the test pods.
+[root@k8smaster1 scheduler]# kubectl delete pods tolerations-pod3
+[root@k8smaster1 scheduler]# kubectl delete pods tolerations-pod5
+
+
