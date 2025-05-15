@@ -1,0 +1,52 @@
+Step 1 Mark a node as unschedulable.
+[root@k8smaster1 scheduler]# kubectl cordon k8snode1
+Check the setting.
+kubectl describe nodes k8snode1
+
+kubectl gert nodes
+
+Step 2 Create a test pod.
+Create a pod.
+[root@k8smaster1 scheduler]# cat > cordon-pod.yaml <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+ name: cordon-pod
+spec:
+ containers:
+ - name: cordon-pod
+ image: nginx
+ imagePullPolicy: IfNotPresent
+ nodeSelector:
+ class: a
+EOF
+[root@k8smaster1 scheduler]# kubectl apply -f cordon-pod.yaml
+Check the node scheduling status. Only k8snode1 has the class:a label and has been
+marked as unschedulable. In this case, the pod can only be pending.
+kubectl get pods -o wide
+
+
+Step 3 Mark a node as schedulable.
+[root@k8smaster1 scheduler]# kubectl uncordon k8snode1
+
+Verify that the pod can be scheduled properly.
+
+kubectl get pods -o wide
+
+Step 4 Force a node to evict a pod.
+Evict the pod from k8snode1.
+[root@k8smaster1 scheduler]# kubectl drain k8snode1 --ignore-daemonsets --force
+
+
+Check the node status.
+kubectl get nodes
+
+Verify that the pod has been evicted from k8snode1.
+kubectl get pods -o wide | grep k8snode1
+
+Mark the node as schedulable.
+[root@k8smaster1 scheduler]# kubectl uncordon k8snode1
+
+
+
+
