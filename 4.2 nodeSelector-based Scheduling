@@ -1,0 +1,53 @@
+Step 1 Create a working directory.
+Run the following commands on the k8smaster1 node:
+[root@k8smaster1 ~]# mkdir scheduler
+[root@k8smaster1 ~]# cd scheduler/
+[root@k8smaster1 scheduler]#
+Step 2 Add a label to a node.
+[root@k8smaster1 scheduler]# kubectl label nodes k8snode1 class=a
+View the label.
+[root@k8smaster1 scheduler]# kubectl get nodes --show-labels k8snode1
+
+Alternatively, run the kubectl describe node k8snode1 command to view the label.
+
+
+Step 3 Create a pod with a specified node label.
+[root@k8smaster1 scheduler]# cat > nodeselector-pod.yaml <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+ name: nodeselector-pod
+spec:
+ containers:
+ - name: nodeselector-pod
+ image: nginx
+ imagePullPolicy: IfNotPresent
+ nodeSelector:
+ class: a
+EOF
+[root@k8smaster1 scheduler]# kubectl apply -f nodeselector-pod.yaml
+Step 4 Check the scheduling result.
+[root@k8smaster1 scheduler]# kubectl get pods -o wide | grep nodeselector-pod
+Step 5 View the scheduling process.
+According to the event, the pod has been scheduled by default-scheduler.
+
+kubectl describe pod nodeselector-pod
+
+
+Step 6 Use common label commands.
+Query a node with a specified label.
+[root@k8smaster1 scheduler]# kubectl get nodes -l class=a
+
+Modify a label.
+[root@k8smaster1 scheduler]# kubectl label nodes k8snode1 class=b --overwrite
+
+Delete a label.
+[root@k8smaster1 scheduler]# kubectl label nodes k8snode1 class-
+
+
+Step 7 Delete the test pod.
+[root@k8smaster1 scheduler]# kubectl delete -f nodeselector-pod.yaml
+
+
+
+
