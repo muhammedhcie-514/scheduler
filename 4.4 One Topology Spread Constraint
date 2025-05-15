@@ -1,0 +1,58 @@
+Step 1 Set the master node to be schedulable.
+[root@k8smaster1 scheduler]# kubectl taint node k8smaster1 node-role.kubernetes.io/master-
+[root@k8smaster1 scheduler]# kubectl taint node k8smaster2 node-role.kubernetes.io/masterStep 2 Add labels to nodes.
+Label zoneA for k8smaster1 and k8smaster2, and label zoneB for k8snode1 and
+k8snode2.
+[root@k8smaster1 scheduler]# kubectl label nodes k8smaster1 zone=zoneA
+[root@k8smaster1 scheduler]# kubectl label nodes k8smaster2 zone=zoneA
+[root@k8smaster1 scheduler]# kubectl label nodes k8snode1 zone=zoneB
+[root@k8smaster1 scheduler]# kubectl label nodes k8snode2 zone=zoneB
+
+
+
+Step 3 Create pods with topology spread constraints.
+Create the topo-pod1.yaml, topo-pod2.yaml, topo-pod3.yaml, and topo-pod4.yaml
+files for four pods. Change the pod name in the files. The following is an example of
+topo-pod1.yaml:
+[root@k8smaster1 scheduler]# cat > topo-pod1.yaml <<EOF
+kind: Pod
+apiVersion: v1
+metadata:
+ name: topo-pod1
+ labels:
+ foo: bar
+spec:
+ containers:
+ - name: topo-pod
+ image: nginx
+ topologySpreadConstraints:
+ - maxSkew: 1
+ topologyKey: zone
+ whenUnsatisfiable: DoNotSchedule
+ labelSelector:
+ matchLabels:
+ foo: bar
+EOF
+
+
+Step 4 Deploy topo-pod1 to topo-pod3.
+[root@k8smaster1 scheduler]# kubectl apply -f topo-pod1.yaml
+[root@k8smaster1 scheduler]# kubectl apply -f topo-pod2.yaml
+[root@k8smaster1 scheduler]# kubectl apply -f topo-pod3.yaml
+Check the deployment status. The three pods are deployed in zoneA and zoneB,
+respectively.
+kubectl get pods -o wide -l foo
+
+
+Step 5 Deploy topo-pod4.
+[root@k8smaster1 scheduler]# kubectl apply -f topo-pod4.yaml
+Step 6 Check the scheduling of topo-pod4.
+topo-pod4 is scheduled to the zone with fewer pods.
+
+kubectl get pods -o wide -l foo
+
+
+Step 7 Delete the test pods.
+[root@k8smaster1 scheduler]# kubectl delete pods -l foo
+
+
