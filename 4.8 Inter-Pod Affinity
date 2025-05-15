@@ -1,0 +1,65 @@
+Step 1 (Optional) View node labels.
+Check whether zone has been set for nodes. If not, set it.
+[root@k8smaster1 scheduler]# kubectl label nodes k8smaster1 zone=zoneA
+[root@k8smaster1 scheduler]# kubectl label nodes k8smaster2 zone=zoneA
+[root@k8smaster1 scheduler]# kubectl label nodes k8snode1 zone=zoneB
+[root@k8smaster1 scheduler]# kubectl label nodes k8snode2 zone=zoneB
+
+
+
+Step 2 Create a pod with a specified label.
+[root@k8smaster1 scheduler]# cat > pod-affinity-pod1.yaml <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-affinity-pod1
+ labels:
+ foo: bar
+spec:
+ containers:
+ - name: pod-affinity-pod1
+ image: nginx
+ imagePullPolicy: IfNotPresent
+ nodeName: k8smaster1
+EOF
+[root@k8smaster1 scheduler]# kubectl apply -f pod-affinity-pod1.yaml
+
+
+Verify that the pod has been scheduled to the specified node k8smaster1
+kubectl get pods -o wide
+
+
+
+Step 3 Create a pod with inter-pod affinity.
+[root@k8smaster1 scheduler]# cat > pod-affinity-pod2.yaml <<EOF
+kind: Pod
+apiVersion: v1
+metadata:
+ name: pod-affinity-pod2
+spec:
+ containers:
+ - name: pod-affinity-pod2
+ image: nginx
+ affinity:
+ podAffinity:
+ requiredDuringSchedulingIgnoredDuringExecution:
+ - labelSelector:
+ matchExpressions:
+ - key: foo
+ operator: In
+ values:
+ - bar
+ topologyKey: zone
+EOF
+[root@k8smaster1 scheduler]# kubectl apply -f pod-affinity-pod2.yaml
+
+
+Step 4 Check the scheduling result.
+Verify that pod-affinity-pod2 has been scheduled to the zone where pod-affinity-pod1
+(with the foo:bar label) is located.
+kubectl get pods -o wide
+
+
+
+
+
