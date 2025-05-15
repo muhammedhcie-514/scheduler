@@ -1,0 +1,39 @@
+Step 1 Create a pod with soft node affinity.
+[root@k8smaster1 scheduler]# cat > node-affinity-pod2.yaml <<EOF
+kind: Pod
+apiVersion: v1
+metadata:
+ name: node-affinity-pod2
+spec:
+ containers:
+ - name: node-affinity-pod2
+ image: nginx
+ affinity:
+ nodeAffinity:
+ preferredDuringSchedulingIgnoredDuringExecution:
+ - weight: 1
+ preference:
+ matchExpressions:
+ - key: kubernetes.io/hostname
+ operator: In
+ values:
+ - k8smaster4
+EOF
+[root@k8smaster1 scheduler]# kubectl apply -f node-affinity-pod2.yaml
+
+
+Step 2 Check the scheduling result.
+The scheduler did not find k8smaster4, but still performs scheduling and allocates the
+pod to another random node.
+kubectl get pods -o wide
+
+
+
+kubectl describe pods node-affinity-pod2
+
+
+
+
+Step 3 Delete the test pod.
+[root@k8smaster1 scheduler]# kubectl delete pods node-affinity-pod2
+
