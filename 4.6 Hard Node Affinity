@@ -1,0 +1,68 @@
+4.6 Hard Node Affinity
+Step 1 Create a pod with hard node affinity.
+Run the following commands on the k8smaster1 node:
+[root@k8smaster1 scheduler]# cat > node-affinity-pod1.yaml <<EOF
+kind: Pod
+apiVersion: v1
+metadata:
+ name: node-affinity-pod1
+spec:
+ containers:
+ - name: node-affinity-pod1
+ image: nginx
+ affinity:
+ nodeAffinity:
+ requiredDuringSchedulingIgnoredDuringExecution:
+ nodeSelectorTerms:
+ - matchExpressions:
+ - key: kubernetes.io/hostname
+ operator: In
+ values:
+ - k8smaster4
+EOF
+[root@k8smaster1 scheduler]# kubectl apply -f node-affinity-pod1.yaml
+
+
+Step 2 Check the scheduling result.
+The pod failed to be scheduled and is in the Pending state. The event shows no matched
+label is found.
+
+kubectl get pods -o wide
+
+
+kubectl describe pods node-affinity-pod1
+
+Step 3 Change the label value.
+[root@k8smaster1 scheduler]# cat > node-affinity-pod1.yaml <<EOF
+kind: Pod
+apiVersion: v1
+metadata:
+ name: node-affinity-pod1
+spec:
+ containers:
+ - name: node-affinity-pod1
+ image: nginx
+ affinity:
+ nodeAffinity:
+ requiredDuringSchedulingIgnoredDuringExecution:
+ nodeSelectorTerms:
+ - matchExpressions:
+ - key: kubernetes.io/hostname
+ operator: In
+ values:
+ - k8smaster1
+ - k8smaster2
+EOF
+
+Re-create a pod.
+[root@k8smaster1 scheduler]# kubectl delete pods node-affinity-pod1
+[root@k8smaster1 scheduler]# kubectl apply -f node-affinity-pod1.yaml
+
+
+Step 4 Check the scheduling result.
+kubectl get pods -o wide
+
+Step 5 Delete the test pod.
+[root@k8smaster1 scheduler]# kubectl delete pods node-affinity-pod1
+
+
