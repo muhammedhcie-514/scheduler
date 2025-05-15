@@ -1,0 +1,22 @@
+Step 1 Create a pod with a specified node name.
+[root@k8smaster1 scheduler]# cat > nodename-pod.yaml <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+ name: nodename-pod
+spec:
+ containers:
+ - name: nodename-pod
+ image: nginx
+ imagePullPolicy: IfNotPresent
+ nodeName: k8snode2
+EOF
+[root@k8smaster1 scheduler]# kubectl apply -f nodename-pod.yaml
+Step 2 Check the scheduling result.
+Step 3 View the scheduling process.
+According to the event, the pod has not been scheduled by default-scheduler.
+kubectl describe pods nodename-pod
+
+Step 4 Clear the environment.
+[root@k8smaster1 scheduler]# kubectl delete -f nodename-pod.yaml
+
